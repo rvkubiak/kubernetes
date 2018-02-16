@@ -18,7 +18,9 @@ REGISTRY?="staging-k8s.gcr.io"
 IMAGE=debian-iptables
 TAG?=v10
 ARCH?=amd64
-TEMP_DIR?=$(shell mktemp -d)
+ifndef TEMP_DIR
+	TEMP_DIR:=$(shell mktemp -d)
+endif
 QEMUVERSION=v2.9.1
 
 ifeq ($(ARCH),arm)
