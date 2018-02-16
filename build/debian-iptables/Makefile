@@ -16,7 +16,7 @@
 
 REGISTRY?="staging-k8s.gcr.io"
 IMAGE=debian-iptables
-TAG=v10
+TAG?=v10
 ARCH?=amd64
 TEMP_DIR:=$(shell mktemp -d)
 QEMUVERSION=v2.9.1
@@ -52,6 +52,7 @@ else
 	cd $(TEMP_DIR) && sed -i "s/CROSS_BUILD_//g" Dockerfile
 endif
 
+container: build
 	docker build --pull -t $(REGISTRY)/$(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
 
 push: build
