@@ -1,0 +1,50 @@
+# In this directory, run the following command to build this addon.
+# $ gcloud container builds submit --no-source --config=cloudbuild.yaml
+#
+# To specify arguments add the substitutions flag.
+# $ gcloud container builds submit --no-source --config=cloudbuild.yaml \
+#   --substitutions=_TAG=v11,_ARCH=arm64
+timeout: 10800s
+
+substitutions:
+  { "_ARCH": "amd64",
+    "_REGISTRY": "gcr.io/k8s-image-staging",
+    "_TAG": "v10" }
+
+steps:
+- name: gcr.io/cloud-builders/git
+  id: git-clone
+  entrypoint: bash
+  env:
+    - "TEMP_DIR=/workspace/tmp-${_ARCH}"
+  args:
+  - "-c"
+  - |
+    set -ex
+    mkdir -p /workspace/src/k8s.io
+    mkdir -p $${TEMP_DIR}
+    cd /workspace/src/k8s.io
+    git clone https://github.com/kubernetes/kubernetes.git
+
+- name: gcr.io/k8s-image-staging/make
+  id: run-build
+  entrypoint: bash
+  env:
+    - "TEMP_DIR=/workspace/tmp-${_ARCH}"
+  dir: "/workspace/src/k8s.io/kubernetes/build/debian-iptables"
+  args: ['make', 'build']
+
+- name: gcr.io/cloud-builders/docker
+  id: build-container
+  entrypoint: bash
+  env:
+    - "TEMP_DIR=/workspace/tmp-${_ARCH}"
+  dir: "/workspace/src/k8s.io/kubernetes/build/debian-iptables"
+  args:
+  - "-c"
+  - |
+    set -e
+    docker build -t ${_REGISTRY}/debian-iptables-${_ARCH}:${_TAG} $${TEMP_DIR}
+
+images:
+  - "${_REGISTRY}/debian-iptables-${_ARCH}:${_TAG}"

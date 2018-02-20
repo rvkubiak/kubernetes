@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY:	build push
+.PHONY:	build container push
 
 REGISTRY?="staging-k8s.gcr.io"
 IMAGE=debian-iptables
-TAG=v10
+TAG?=v10
 ARCH?=amd64
-TEMP_DIR:=$(shell mktemp -d)
+ifndef TEMP_DIR
+	TEMP_DIR:=$(shell mktemp -d)
+endif
 QEMUVERSION=v2.9.1
 
 ifeq ($(ARCH),arm)
@@ -52,9 +54,10 @@ else
 	cd $(TEMP_DIR) && sed -i "s/CROSS_BUILD_//g" Dockerfile
 endif
 
+container: build
 	docker build --pull -t $(REGISTRY)/$(IMAGE)-$(ARCH):$(TAG) $(TEMP_DIR)
 
-push: build
+push: build container
 	gcloud docker -- push $(REGISTRY)/$(IMAGE)-$(ARCH):$(TAG)
 
 all: push
